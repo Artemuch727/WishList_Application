@@ -190,8 +190,7 @@ app.get('*', async (req, res, next) => {
       res.redirect(route.status || 302, route.redirect);
       return;
     }
-  //
-  //
+
     const data = { ...route };
     data.children = ReactDOM.renderToString(<App context={context}>{route.component}</App>);
     data.style = [...css].join('');
@@ -202,12 +201,7 @@ app.get('*', async (req, res, next) => {
     if (assets[route.chunk]) {
       data.scripts.push(assets[route.chunk].js);
     }
-
-    //console.log(route.component);
-
     const html = ReactDOM.renderToStaticMarkup(<Html {...data} />);
-
-    console.log(html);
     res.status(route.status || 200);
     res.send(`<!doctype html>${html}`);
    } catch (err) {
