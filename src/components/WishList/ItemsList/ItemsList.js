@@ -1,20 +1,9 @@
-/**
- * React Starter Kit (https://www.reactstarterkit.com/)
- *
- * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE.txt file in the root directory of this source tree.
- */
 
 import React from 'react';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
 import Search from 'material-ui/svg-icons/action/search';
 import TextField from 'material-ui/TextField';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
-import api from '../../../core/api';
-import DialogPopup from '../Dialog/DialogPopup.js';
-import s from './ItemsList.css';
 import {List, ListItem} from 'material-ui/List';
 import {grey400, darkBlack, lightBlack} from 'material-ui/styles/colors';
 import IconButton from 'material-ui/IconButton';
@@ -23,23 +12,28 @@ import IconMenu from 'material-ui/IconMenu';
 import MenuItem from 'material-ui/MenuItem';
 import ArrowDropRight from 'material-ui/svg-icons/navigation-arrow-drop-right';
 import Menu from 'material-ui/Menu';
+import FlatButton from 'material-ui/FlatButton';
+import EditDialog from 'material-ui/Dialog';
 
+import s from './ItemsList.css';
+import DialogPopup from '../Dialog/DialogPopup.js';
+import api from '../../../core/api';
 import SearchField from '../SearchField/SearchField.js';
-
 
 class ItemsList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selItem: '',
+      selItem: {},
       w_items: [],
-      searchQuery:''
+      searchQuery:'',
+      openEdit: false
       }
     }
 
     componentWillReceiveProps(nextProps) {
         api.getListItemsFromDB(nextProps.listSelected)
-          .then((response) => this.setState({...this.state, w_items: response.data, selItem: '', searchQuery: ''}))
+          .then((response) => this.setState({...this.state, w_items: response.data, selItem: {}, searchQuery: ''}))
     }
 
       handleToggleSearch(searchQuery) {
@@ -50,25 +44,51 @@ class ItemsList extends React.Component {
         }
       }
 
-      handleItemSelect(id) {
-        this.setState({...this.state, selItem: id})
+      openItemChangeDialog() {
+        this.setState({openEdit: true})
+      }
+      closeItemChangeDialog() {
+        this.setState({openEdit: false})
+      }
+
+      handleItemChange() {
+        var newInfo = this.state.selItem.description;
+        this.setState({openEdit: false})
+        console.log(newInfo);
+        api.changeListIteminDB(this.state.selItem.id, newInfo).then((err)=>{
+            console.log(err);
+          })
+          .then(() => api.getListItemsFromDB(this.props.listSelected))
+          .then((response) => this.setState({...this.state, w_items: response.data, selItem: {}}))
+      }
+
+      handleItemDescriptionChange(event) {
+          console.log(event.target.value );
+        this.setState({...this.state, selItem: {...this.state.selItem, description: event.target.value }})
+      }
+
+
+
+
+      handleItemSelect(item) {
+        this.setState({...this.state, selItem: item})
       }
 
       handleItemDelete() {
-        var itemId  = this.state.selItem;
+        var itemId  = this.state.selItem.id;
         api.deleteListItemFromDB(itemId).then((err)=>{
             console.log(err);
           })
           .then(() => api.getListItemsFromDB(this.props.listSelected))
-          .then((response) => this.setState({...this.state, w_items: response.data, selItem: ''}))
+          .then((response) => this.setState({...this.state, w_items: response.data, selItem: {}}))
       }
 
       handleItemMove = (listId) => {
-        api.moveListItemFromDB(this.state.selItem, listId).then((err)=>{
+        api.moveListItemFromDB(this.state.selItem.id, listId).then((err)=>{
             console.log(err);
           })
           .then(() => api.getListItemsFromDB(this.props.listSelected))
-          .then((response) => this.setState({...this.state, w_items: response.data, selItem: ''}))
+          .then((response) => this.setState({...this.state, w_items: response.data, selItem: {}}))
       }
 
 
@@ -90,6 +110,7 @@ class ItemsList extends React.Component {
             }>
               Move to another list
           </MenuItem>
+            <MenuItem onTouchTap={this.openItemChangeDialog.bind(this)}>Edit item</MenuItem>
           <MenuItem onTouchTap={this.handleItemDelete.bind(this)}>Delete item</MenuItem>
         </IconMenu>
     );
@@ -98,7 +119,7 @@ class ItemsList extends React.Component {
       return <ListItem
           key={item.id}
           style={{ minHeight:"180px", cursor: 'initial'}}
-          onTouchTap={this.handleItemSelect.bind(this,item.id)}
+          onTouchTap={this.handleItemSelect.bind(this,item)}
           rightIcon={rightIconMenu}
           >
           <div>
@@ -124,8 +145,21 @@ class ItemsList extends React.Component {
     }
 
 
+    const actions = [
+      <FlatButton
+        label="Cancel"
+        primary={true}
+        onTouchTap={this.closeItemChangeDialog.bind(this)}
+      />,
+      <FlatButton
+        label="Submit"
+        primary={true}
+        onTouchTap={this.handleItemChange.bind(this)}
+      />,
+    ];
+
     return (
-      <div className={s.panel} style={{minWidth: '450px',  width: '77%',  display: this.props.listSelected.length == 0 ? 'none' : 'block'}}>
+      <div className={s.panel} style={{minWidth: '450px',  width: '70%',  display: this.props.listSelected.length == 0 ? 'none' : 'block'}}>
         <div className={s.panelHeading + ' ' + s.panelDefault + ' ' + s.panelFlex} >
           <h2 className={s.panelTitle}>{ panTitle }</h2>
           <SearchField handleToggleSearch={this.handleToggleSearch.bind(this)}/>
@@ -133,6 +167,24 @@ class ItemsList extends React.Component {
         <div className={s.panelBody} >
           <List className={s.listbox} children = {WishlistItems} />
         </div>
+
+        <EditDialog
+            title={this.state.selItem.title}
+            actions={actions}
+            modal={false}
+            open={this.state.openEdit}
+            onRequestClose={this.closeItemChangeDialog.bind(this)}
+          >
+          <div style={{display: "flex", justifyContent: "flex-start", alignItems: "center", width: "100%"}}>
+              <div style={{marginRight: "35px"}}>
+                <img src={this.state.selItem.img} width="120px" height="120px" />
+              </div>
+              <div style={{ width: "100%"}}>
+                <TextField fullWidth={true} value={this.state.selItem.description} onChange={this.handleItemDescriptionChange.bind(this)} multiLine={true} rows={1}  name="descr" floatingLabelText="Input  description" />
+              </div>
+          </div>
+          </EditDialog>
+
       </div>
     );
   }
