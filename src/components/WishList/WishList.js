@@ -1,4 +1,11 @@
-
+/**
+ * React Starter Kit (https://www.reactstarterkit.com/)
+ *
+ * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
 import Delete from 'material-ui/svg-icons/action/delete';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
 import FlatButton from 'material-ui/FlatButton';
@@ -11,6 +18,7 @@ import Paper from 'material-ui/Paper';
 import ArrowDropRight from 'material-ui/svg-icons/navigation-arrow-drop-right';
 import Menu from 'material-ui/Menu';
 import ContentAdd from 'material-ui/svg-icons/content/add';
+import RefreshBtn from 'material-ui/svg-icons/action/autorenew';
 import React from 'react';
 import Badge from 'material-ui/Badge';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
@@ -39,6 +47,8 @@ class WishList extends React.Component {
       this.setState({...this.state, lists: response.data});
     });
   }
+
+
 
   handleOpen = () => {
     this.setState({...this.state, open: true});
@@ -75,9 +85,9 @@ class WishList extends React.Component {
   handleListDelete = (list) => {
     var delCheck = confirm("Are you sure in deleting list??");
     if (delCheck){
-      api.deleteListFromDB(list)
+      api.deleteListFromDB(list.id)
         .then(() => api.getAllListsFromDB())
-        .then((response) => this.setState({...this.state, lists: response.data, selItem:'', selList: '', searchRes: '', snack: {...this.state.snack, showSnack: true, message: 'List "'+list+'" has been deleted'}}))
+        .then((response) => this.setState({...this.state, lists: response.data, selItem:'', selList: '', searchRes: '', snack: {...this.state.snack, showSnack: true, message: 'List "'+list.name+'" has been deleted'}}))
     }
   };
 
@@ -87,6 +97,12 @@ class WishList extends React.Component {
       this.setState({...this.state, w_items: response.data, searchRes: ''});
     });
   };
+
+  handleItemsRefresh() {
+    let lists = api.getAllListsFromDB().then((response)=>{
+      this.setState({...this.state, lists: response.data});
+    });
+  }
 
 
   render() {
@@ -125,7 +141,7 @@ class WishList extends React.Component {
             style={{display:'flex', alignItems: 'center', width:'95%'}}
             leftIcon={<span style={countLabel}> {item.kol} </span>}
             rightIcon={ this.state.selList == item.id ?
-                <Delete key={item.id} onTouchTap={this.handleListDelete.bind(this,item.id)} style={{float:"right", position:"absolute", right:'0px'}} /> : null}
+                <Delete key={item.id} onTouchTap={this.handleListDelete.bind(this,item)} style={{float:"right", position:"absolute", right:'0px'}} /> : null}
             >
           </MenuItem>
     });
@@ -139,7 +155,10 @@ class WishList extends React.Component {
         <div className={s.container}>
           <div className={s.panel}  style={{width:"25%",float:"left",marginRight:"25px", minWidth: '195px'}}>
             <div className={s.panelHeading + ' ' + s.panelDefault + ' ' + s.panelFlex}>
-              <h2 className={s.panelTitle}>My lists</h2>
+              <div className = {s.panelFlex}>
+                <h2 className={s.panelTitle} style={{marginRight: "10px"}}>My lists </h2>
+                <RefreshBtn color={"#373277"} hoverColor={"#61dafb"} style={{cursor: "pointer"}} onTouchTap={this.handleItemsRefresh.bind(this)}/>
+              </div>
               <FloatingActionButton mini={true} style={style} backgroundColor="#373277" onTouchTap={this.handleOpen}>
                 <ContentAdd />
                   <DialogPopup open={this.state.open} handleClose={this.handleClose} handleSubmit={this.handleListAdd}/>
@@ -151,7 +170,7 @@ class WishList extends React.Component {
               </Menu>
             </div>
           </div>
-            <ItemsList lists = {this.state.lists} listSelected={this.state.selList} />
+            <ItemsList lists = {this.state.lists} listSelected={this.state.selList} handleItemsRefresh={this.handleItemsRefresh.bind(this)}/>
         </div>
         <Snackbar
           open={this.state.snack.showSnack}

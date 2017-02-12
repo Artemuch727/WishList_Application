@@ -1,3 +1,11 @@
+/**
+ * React Starter Kit (https://www.reactstarterkit.com/)
+ *
+ * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
 
 import React from 'react';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
@@ -68,8 +76,6 @@ class ItemsList extends React.Component {
       }
 
 
-
-
       handleItemSelect(item) {
         this.setState({...this.state, selItem: item})
       }
@@ -89,6 +95,7 @@ class ItemsList extends React.Component {
           })
           .then(() => api.getListItemsFromDB(this.props.listSelected))
           .then((response) => this.setState({...this.state, w_items: response.data, selItem: {}}))
+          .then(() => this.props.handleItemsRefresh())
       }
 
 
@@ -144,6 +151,30 @@ class ItemsList extends React.Component {
       panTitle = this.props.listSelected != '' ? this.props.lists.filter((item)=>{return item.id == this.props.listSelected})[0].name : '';
     }
 
+    let resulList = (
+      <div>
+        <List className={s.listbox} children = {WishlistItems} />
+        <EditDialog
+            title={this.state.selItem.title}
+            actions={actions}
+            modal={false}
+            open={this.state.openEdit}
+            onRequestClose={this.closeItemChangeDialog.bind(this)}
+          >
+          <div style={{display: "flex", justifyContent: "flex-start", alignItems: "center", width: "100%"}}>
+              <div style={{marginRight: "35px"}}>
+                <img src={this.state.selItem.img} width="120px" height="120px" />
+              </div>
+              <div style={{ width: "100%"}}>
+                <TextField fullWidth={true} value={this.state.selItem.description} onChange={this.handleItemDescriptionChange.bind(this)} multiLine={true} rows={1}  name="descr" floatingLabelText="Input  description" />
+              </div>
+          </div>
+          </EditDialog>
+      </div>
+    )
+
+    let noItemsTitle = <h3 className={s.panelTitle}>There is no items in selected list :( </h3>
+
 
     const actions = [
       <FlatButton
@@ -165,26 +196,8 @@ class ItemsList extends React.Component {
           <SearchField handleToggleSearch={this.handleToggleSearch.bind(this)}/>
         </div>
         <div className={s.panelBody} >
-          <List className={s.listbox} children = {WishlistItems} />
+          {this.state.w_items.length > 0 ? resulList : noItemsTitle}
         </div>
-
-        <EditDialog
-            title={this.state.selItem.title}
-            actions={actions}
-            modal={false}
-            open={this.state.openEdit}
-            onRequestClose={this.closeItemChangeDialog.bind(this)}
-          >
-          <div style={{display: "flex", justifyContent: "flex-start", alignItems: "center", width: "100%"}}>
-              <div style={{marginRight: "35px"}}>
-                <img src={this.state.selItem.img} width="120px" height="120px" />
-              </div>
-              <div style={{ width: "100%"}}>
-                <TextField fullWidth={true} value={this.state.selItem.description} onChange={this.handleItemDescriptionChange.bind(this)} multiLine={true} rows={1}  name="descr" floatingLabelText="Input  description" />
-              </div>
-          </div>
-          </EditDialog>
-
       </div>
     );
   }
