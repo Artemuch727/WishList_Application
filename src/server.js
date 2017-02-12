@@ -1,11 +1,3 @@
-/**
- * React Starter Kit (https://www.reactstarterkit.com/)
- *
- * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE.txt file in the root directory of this source tree.
- */
 
 import 'babel-polyfill';
 import path from 'path';
@@ -13,7 +5,6 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
-
 import React from 'react';
 import ReactDOM from 'react-dom/server';
 import UniversalRouter from 'universal-router';
@@ -52,11 +43,12 @@ app.use(bodyParser.json());
 
 app.use(cors());
 
-db.run("CREATE TABLE if not exists LISTS (id VARCHAR(10) PRIMARY KEY NOT NULL, name VARCHAR(50) NOT NULL, description VARCHAR(255))", (err) => {
+
+db.run("CREATE TABLE if not exists LISTS (id VARCHAR(10) PRIMARY KEY NOT NULL, name VARCHAR(50) NOT NULL)", (err) => {
   db.all("SELECT * FROM LISTS", (err,rows) => {
     if (rows.length == 0){
-      db.run("INSERT INTO LISTS VALUES ('wshl','Wishlist','List of my wishes for my friends')");
-      db.run("INSERT INTO LISTS VALUES ('shpl','Shoppinglist','List of my future shoppings') ");
+      db.run("INSERT INTO LISTS VALUES ('wshl','Wishlist')");
+      db.run("INSERT INTO LISTS VALUES ('shpl','Shoppinglist') ");
     }
   })
   db.run("CREATE TABLE if not exists LIST_ITEMS (id INTEGER PRIMARY KEY NOT NULL, title VARCHAR(100) NOT NULL, description VARCHAR(255), price FLOAT, img VARCHAR(255), url VARCHAR(255), list VARCHAR(10))");
@@ -67,7 +59,7 @@ db.run("CREATE TABLE if not exists LISTS (id VARCHAR(10) PRIMARY KEY NOT NULL, n
 app.get('/api/items/all', async (req, res, next) => {
   db.all(`SELECT * FROM LIST_ITEMS`, (err, rows) => {
     if (err) { next(err); }
-    res.send(rows);
+    res.status(200).send(rows);
   });
 });
 
@@ -75,19 +67,18 @@ app.get('/api/items', async (req, res, next) => {
   if (req.query.searchQuery){
     db.all(`SELECT * FROM LIST_ITEMS WHERE title like '%${req.query.searchQuery}%' or description like '%${req.query.searchQuery}%'`, (err, rows) => {
       if (err) { next(err); }
-      res.send(rows);
+      res.status(200).send(rows);
     });
   } else {
     db.all(`SELECT * FROM LIST_ITEMS WHERE list ='${req.query.list}'`, (err, rows) => {
       if (err) { next(err); }
-      res.send(rows);
+      res.status(200).send(rows);
     });
   }
 });
 
 app.post('/api/items', async (req, res, next) => {     // title,description,price,img,url,list)
     db.all(`SELECT * FROM LIST_ITEMS WHERE title = '${req.body.title}' and url = '${req.body.url}'`, (err, rows) => {
-      console.log(rows.length + ' = ' + req.body.title + ' = ' + req.body.url)
       if (rows.length > 0) {
         res.status(500).send('Already exists');
         next(err);
@@ -117,30 +108,38 @@ app.delete('/api/items', async (req, res, next) => {
 
 
 app.put('/api/items', async (req, res, next) => {
-  console.log()
-  db.run(`UPDATE LIST_ITEMS SET list = "${req.query.list}" WHERE id="${req.query.item}" `, (err)=> {
-     if(err !== null) {
-       next(err);
-     } else {
-       res.send(200, 'item moved');
-     }
-   })
+  if (req.query.list){
+    db.run(`UPDATE LIST_ITEMS SET list = "${req.query.list}" WHERE id="${req.query.item}" `, (err)=> {
+       if(err !== null) {
+         next(err);
+       } else {
+         res.status(200).send('item moved');
+       }
+     })
+  } else {
+    db.run(`UPDATE LIST_ITEMS SET description = "${req.query.newInfo}" WHERE id="${req.query.item}" `, (err)=> {
+       if(err !== null) {
+         next(err);
+       } else {
+         res.status(200).send('item changed');
+       }
+     })
+  }
 });
 
 
 app.get('/api/lists', async (req, res, next) => {
-  db.all('SELECT * FROM LISTS', (err, rows) => {
+  db.all('SELECT l.*, ls.kol FROM LISTS l LEFT JOIN (SELECT COUNT(ls.list) as kol, ls.list  FROM LIST_ITEMS ls GROUP BY ls.list) ls ON ls.list=l.id ', (err, rows) => {
     if (err) { next(err); }
     res.send(rows);
   });
 });
 
+
 app.post('/api/lists', async (req, res, next) => {
-  console.log('insert lists');
-  // res.send(200);
-  db.all(`INSERT INTO LISTS VALUES ("${req.body.list.id}","${req.body.list.name}","${req.body.list.descr}")`, (err, rows) => {
+  db.all(`INSERT INTO LISTS VALUES ("${req.body.list.id}","${req.body.list.name}")`, (err, rows) => {
     if (err) { next(err); }
-    res.send(200, 'items inserted');
+    res.status(200).send('items inserted');
   });
 });
 
@@ -155,7 +154,7 @@ app.delete('/api/lists', async (req, res, next) => {
           if(err !== null) {
             next(err);
           } else {
-              res.send(200, 'list deleted');
+              res.status(200).send('list deleted');
           }
         })
       }
@@ -190,7 +189,8 @@ app.get('*', async (req, res, next) => {
       res.redirect(route.status || 302, route.redirect);
       return;
     }
-
+  //
+  //
     const data = { ...route };
     data.children = ReactDOM.renderToString(<App context={context}>{route.component}</App>);
     data.style = [...css].join('');
@@ -201,7 +201,12 @@ app.get('*', async (req, res, next) => {
     if (assets[route.chunk]) {
       data.scripts.push(assets[route.chunk].js);
     }
+
+    //console.log(route.component);
+
     const html = ReactDOM.renderToStaticMarkup(<Html {...data} />);
+
+    //console.log(html);
     res.status(route.status || 200);
     res.send(`<!doctype html>${html}`);
    } catch (err) {
