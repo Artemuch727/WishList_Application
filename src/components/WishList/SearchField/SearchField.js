@@ -1,11 +1,3 @@
-/**
- * React Starter Kit (https://www.reactstarterkit.com/)
- *
- * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE.txt file in the root directory of this source tree.
- */
 
 import React from 'react';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
@@ -54,7 +46,7 @@ class SearchField extends React.Component {
     return (
       <div style={{display:"flex",alignItems: "center"}}>
         <TextField  onKeyUp={this.hendleSearchBegin.bind(this)} value = {this.state.searchQuery} hintText="search..." style={{display: this.state.open ? 'block' : 'none'}} onChange={this.handleSearchChange.bind(this)}/>
-        <FloatingActionButton mini={true} style={style} onTouchTap={this.handleShowSearch.bind(this)}>
+        <FloatingActionButton backgroundColor="#373277" mini={true} style={style} onTouchTap={this.handleShowSearch.bind(this)}>
           <Search />
         </FloatingActionButton>
       </div>
