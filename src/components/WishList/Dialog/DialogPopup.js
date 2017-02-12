@@ -1,11 +1,3 @@
-/**
- * React Starter Kit (https://www.reactstarterkit.com/)
- *
- * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE.txt file in the root directory of this source tree.
- */
 
 import React from 'react';
 import Dialog from 'material-ui/Dialog';
@@ -19,8 +11,7 @@ class DialogPopup extends React.Component {
     this.state = {
       list:{
         id:'',
-        name:'',
-        descr:''
+        name:''
       },
     }
   }
@@ -37,12 +28,6 @@ class DialogPopup extends React.Component {
         list = update(this.state.list, {
            name: {$set: event.target.value}}
         );
-        break;
-      break;
-      case 'l_descr':
-        list = update(this.state.list, {
-           descr: {$set: event.target.value}}
-        );
       break;
       default:
         break;
@@ -52,6 +37,15 @@ class DialogPopup extends React.Component {
 
   shouldComponentUpdate = (nextProps, nextState) => {
    return  this.state.list !== nextState.list || this.props.open !== nextProps.open;
+  }
+
+  handleSubmitBtn() {
+    if (this.state.list.id && this.state.list.name ){
+        this.props.handleSubmit(this.state.list)
+    } else {
+      alert('Fields cannot be empty!');
+    }
+
   }
 
   render() {
@@ -64,7 +58,7 @@ class DialogPopup extends React.Component {
       <FlatButton
         label="Submit"
         primary={true}
-        onTouchTap={this.props.handleSubmit.bind(this,this.state.list)}
+        onTouchTap={this.handleSubmitBtn.bind(this)}
       />,
     ];
     return (
@@ -74,14 +68,13 @@ class DialogPopup extends React.Component {
           modal={false}
           open={this.props.open}
           onRequestClose={this.props.handleClose}
+          style={{    width: "80%"}}
         >
-        <div style={{display: "flex", justifyContent: "space-around", width: "100%"}}>
-          <TextField  style={{width: "15%"}} name="l_id" hintText="list id"  floatingLabelText="Input list ID" onChange={this.handleChange.bind(this)}/>
-          <TextField  name="l_name" hintText="list name"  floatingLabelText="Input list name" onChange={this.handleChange.bind(this)}/>
-          <TextField  name="l_descr" hintText="list description"  floatingLabelText="Input short description" onChange={this.handleChange.bind(this)}/>
+        <div style={{display: "flex", justifyContent: "flex-start", width: "100%"}}>
+          <TextField  style={{width: "15%", marginRight: "35px"}} name="l_id" hintText="List ID"  floatingLabelText="List ID" onChange={this.handleChange.bind(this)}/>
+          <TextField  fullWidth={true} name="l_name" hintText="List name"  floatingLabelText="List name" onChange={this.handleChange.bind(this)}/>
         </div>
-
-        </Dialog>
+      </Dialog>
     );
   }
 }
