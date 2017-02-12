@@ -1,15 +1,9 @@
-/**
- * React Starter Kit (https://www.reactstarterkit.com/)
- *
- * Copyright © 2014-2016 Kriasoft, LLC. All rights reserved.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE.txt file in the root directory of this source tree.
- */
+
 import Delete from 'material-ui/svg-icons/action/delete';
 import FloatingActionButton from 'material-ui/FloatingActionButton';
 import FlatButton from 'material-ui/FlatButton';
 import IconButton from 'material-ui/IconButton';
+import Snackbar from 'material-ui/Snackbar';
 import MoreVertIcon from 'material-ui/svg-icons/navigation/more-vert';
 import IconMenu from 'material-ui/IconMenu';
 import MenuItem from 'material-ui/MenuItem';
@@ -18,6 +12,7 @@ import ArrowDropRight from 'material-ui/svg-icons/navigation-arrow-drop-right';
 import Menu from 'material-ui/Menu';
 import ContentAdd from 'material-ui/svg-icons/content/add';
 import React from 'react';
+import Badge from 'material-ui/Badge';
 import withStyles from 'isomorphic-style-loader/lib/withStyles';
 import s from './WishList.css';
 import api from '../../core/api';
@@ -29,6 +24,10 @@ class WishList extends React.Component {
     super(props);
     this.state = {
       open: false,
+      snack: {
+        showSnack: false,
+        message: ''
+      },
       error: false,
       selList: '',
       lists: []
@@ -49,6 +48,10 @@ class WishList extends React.Component {
     this.setState({...this.state, open: false});
   };
 
+  handleRequestCloseSnack = () => {
+    this.setState({...this.state, snack: {...this.state.snack, showSnack: false}});
+  };
+
   handleListAdd = (list) => {
     let chList = this.state.lists.filter((item)=>{
       return item.id == list.id
@@ -63,19 +66,18 @@ class WishList extends React.Component {
         console.log(err);
       })
       .then(() => api.getAllListsFromDB())
-        .then((response)=>{this.setState({...this.state, lists: response.data});})
+        .then((response)=>{this.setState({...this.state, lists: response.data,  snack: {...this.state.snack, showSnack: true, message: 'New list "'+list.name+'" Added'}});})
       .then(() => api.getListItemsFromDB(this.state.selList))
         .then((response) => this.setState({...this.state, w_items: response.data}))
     }
   };
 
   handleListDelete = (list) => {
-    console.log(list);
     var delCheck = confirm("Are you sure in deleting list??");
     if (delCheck){
       api.deleteListFromDB(list)
         .then(() => api.getAllListsFromDB())
-        .then((response) => this.setState({...this.state, lists: response.data, selItem:'', selList: '', searchRes: ''}))
+        .then((response) => this.setState({...this.state, lists: response.data, selItem:'', selList: '', searchRes: '', snack: {...this.state.snack, showSnack: true, message: 'List "'+list+'" has been deleted'}}))
     }
   };
 
@@ -100,15 +102,32 @@ class WishList extends React.Component {
       display: 'inline-block',
     };
 
+    const countLabel = {
+      display: "flex",
+      flexFlow: "row wrap",
+      justifyContent: "center",
+      fontWeight: "bold",
+      lineHeight: "25px",
+      alignContent: "center",
+      fontSize: "12px",
+      width: "24px",
+      height: "24px",
+      borderRadius: "50%",
+      backgroundColor: "#373277",
+      color: "#FFF"
+    };
+
     let Lists = this.state.lists.map((item) => {
       return <MenuItem
-          key={item.id}
-          primaryText={item.name}
-          onTouchTap={this.handleListselect.bind(this,item)}
-          style={{display:'flex', alignItems: 'center', width:'82%'}}
-          rightIcon={ this.state.selList == item.id ?
-              <Delete key={item.id} onTouchTap={this.handleListDelete.bind(this,item.id)} style={{float:"right", position:"absolute", right:'0px'}} /> : null}
-          />
+            key={item.id}
+            primaryText={item.name}
+            onTouchTap={this.handleListselect.bind(this,item)}
+            style={{display:'flex', alignItems: 'center', width:'95%'}}
+            leftIcon={<span style={countLabel}> {item.kol} </span>}
+            rightIcon={ this.state.selList == item.id ?
+                <Delete key={item.id} onTouchTap={this.handleListDelete.bind(this,item.id)} style={{float:"right", position:"absolute", right:'0px'}} /> : null}
+            >
+          </MenuItem>
     });
 
     let selList = this.state.lists.filter((item)=>{
@@ -118,10 +137,10 @@ class WishList extends React.Component {
     return (
       <div className={s.root}>
         <div className={s.container}>
-          <div className={s.panel}  style={{width:"21%",float:"left",marginRight:"25px", minWidth: '195px'}}>
+          <div className={s.panel}  style={{width:"25%",float:"left",marginRight:"25px", minWidth: '195px'}}>
             <div className={s.panelHeading + ' ' + s.panelDefault + ' ' + s.panelFlex}>
               <h2 className={s.panelTitle}>My lists</h2>
-              <FloatingActionButton mini={true} style={style} onTouchTap={this.handleOpen}>
+              <FloatingActionButton mini={true} style={style} backgroundColor="#373277" onTouchTap={this.handleOpen}>
                 <ContentAdd />
                   <DialogPopup open={this.state.open} handleClose={this.handleClose} handleSubmit={this.handleListAdd}/>
               </FloatingActionButton>
@@ -132,8 +151,14 @@ class WishList extends React.Component {
               </Menu>
             </div>
           </div>
-              <ItemsList className={s.listbox} lists = {this.state.lists} listSelected={this.state.selList} />
+            <ItemsList lists = {this.state.lists} listSelected={this.state.selList} />
         </div>
+        <Snackbar
+          open={this.state.snack.showSnack}
+          message={this.state.snack.message}
+          autoHideDuration={4000}
+          onRequestClose={this.handleRequestCloseSnack}
+        />
       </div>
     );
   }
